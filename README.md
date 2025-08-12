@@ -3,11 +3,10 @@
 You can **replace the API key, API endpoint, model name, and input data path with your own local model or API to adapt it to your use case.
 
 ## 1. Project Structure
-├── code_for_sentiment_analysis.py # Sentiment analysis
-├── code_for_topic_identification.py # Topic identification
-├── code_for_report_generation.py # Report generation & optimization
-├── reports/ # Output folder for generated reports
-└── README.md
+(1) code_for_sentiment_analysis.py # Sentiment analysis
+(2) code_for_topic_identification.py # Topic identification
+(3) code_for_report_generation.py # Report generation & optimization
+(4) README.md
 
 
 ## 2. Features
