@@ -1,0 +1,127 @@
+import os
+import requests
+import base64
+from docx import Document
+
+# local API
+BASE_URL = "http://localhost:1234/v1/chat/completions"  # LM Studio host address
+API_KEY = "lm-studio"  # API key
+
+def encode_image(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")
+
+def send_to_lmstudio(messages):
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": "GPT4All-Community/Meta-Llama-3.1-8B-Instruct-128k-GGUF",
+        "messages": messages,
+        "stream": False,
+    }
+    try:
+        response = requests.post(BASE_URL, headers=headers, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        return result["choices"][0]["message"]["content"]
+    except Exception as e:
+        raise Exception(f"Error during API call: {e}")
+
+def analyze_image(image_path):
+    base64_image = encode_image(image_path)
+    messages = [
+        {
+            "role": "system",
+            "content": "You are an AI assistant named XXX."
+                       "Analyze the feedback results related to students' perceptions of the teaching environment. "
+                       "interpret the accompanying images, give recommendations, and produce a report."
+        },
+        {
+            "role": "user",
+            "content": (
+                f"The following is an image in Base64 format:\n{base64_image}\n"
+                f"Please analyze its content and provide a report describing the key features, "
+                f"trends, or observations."
+            ),
+        },
+    ]
+    report = send_to_lmstudio(messages)
+    print(f"Generated Report:\n{report}\n")
+    return report
+
+def optimize_report(description, report):
+    messages = [
+        {
+            "role": "system",
+            "content": "You are an expert editor specializing in improving the clarity, balance, and accuracy of reports.",
+        },
+        {
+            "role": "user",
+            "content": (
+                f"The following is the report that needs to be optimized:\n{report}\n"
+                f"Optimization requirements: {description}"
+            ),
+        },
+    ]
+    optimized_report = send_to_lmstudio(messages)
+    print(f"Optimized Report:\n{optimized_report}\n")
+    return optimized_report
+
+# save as word
+def save_report_to_docx(text: str, filepath: str, title: str = None):
+    """
+    save as .docx
+    """
+    doc = Document()
+    if title:
+        doc.add_heading(title, level=1)
+    for line in (text or "").splitlines():
+        doc.add_paragraph(line if line.strip() != "" else "")
+    if not text or text.strip() == "":
+        doc.add_paragraph("(empty)")
+    os.makedirs(os.path.dirname(filepath), exist_ok=True) if os.path.dirname(filepath) else None
+    doc.save(filepath)
+    print(f"[Saved] {filepath}")
+
+
+if __name__ == "__main__":
+    # input
+    image_path = "img_10.png"
+
+    # Step 1: analysis
+    print("Step 1: Analyzing the image...")
+    first_report = analyze_image(image_path)
+
+    # Step 2: optimization
+    optimization_description = (
+        "Task: Please comprehensively optimize the following report to ensure it meets the following standards: balance, clarity, readability, accuracy, and deep semantic analysis. \n"
+        "Requirements:\n"
+        "Balance: Provide a comprehensive analysis of both positive and negative aspects without bias.\n"
+        "Clarity: Offer clear and detailed recommendations with specific implementation steps and expected outcomes.\n"
+        "Readability: Use fluent language and format paragraphs and headings for logical flow.\n"
+        "Accuracy: Ensure that data interpretations are accurate.\n"
+        "Semantic Analysis: Provide a deep analysis of the images and tables, exploring deeper meanings and trends.\n"
+        "Coherence: Present ideas clearly and cohesively.\n"
+        "Please refer to these requirements and re-generate the report."
+
+    )
+    print("Step 2: Optimizing the report...")
+    final_report = optimize_report(optimization_description, first_report)
+
+    base = os.path.splitext(os.path.basename(image_path))[0]
+    out_dir = "reports"
+    first_docx = os.path.join(out_dir, f"analysis_report.docx")
+    final_docx = os.path.join(out_dir, f"analysis_report_optimized.docx")
+
+    save_report_to_docx(
+        first_report,
+        first_docx,
+        title=f"Initial Analysis Report"
+    )
+    save_report_to_docx(
+        final_report,
+        final_docx,
+        title=f"Optimized Analysis Report"
+    )
