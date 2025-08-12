@@ -1,0 +1,57 @@
+import requests
+import pandas as pd
+
+# LM Studio local API
+BASE_URL = "http://localhost:1234/v1/chat/completions"
+API_KEY = "lm-studio"
+
+
+def upload_and_read_excel(file_path):
+    return pd.read_excel(file_path)
+
+def evaluate_annotation(context):
+    try:
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "GPT4All-Community/Meta-Llama-3.1-8B-Instruct-128k-GGUF", #model name
+            "messages": context
+        }
+        response = requests.post(BASE_URL, headers=headers, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        return result['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        raise Exception(f"Error during API call: {e}")
+
+def evaluate_row(row):
+    annotation = row['Q15']
+    context = [
+        {"role": "system", "content": "You are an advanced researcher that can precisely follow user's instructions."},
+        {"role": "user", "content": f'''
+       Please analyze the sentiment of the students' feedback.
+       For each text, return only one of the following results: "positive," "negative," or "neutral." 
+       Do not include any additional text in your response.
+       Here is the text you need to evaluate:
+        {annotation}
+        '''},
+    ]
+    sentiment = evaluate_annotation(context)
+    return sentiment
+
+def process_excel(file_path, output_path):
+    df = upload_and_read_excel(file_path)
+    df['T'] = df.apply(evaluate_row, axis=1)
+    df.to_excel(output_path, index=False)
+    print(f"Results saved to {output_path}")
+
+
+if __name__ == "__main__":
+    input_file = "T150.xlsx"  #input
+    output_file = "T15_with_sentiment.xlsx"  #output
+    try:
+        process_excel(input_file, output_file)
+    except Exception as e:
+        print(f"Error: {e}")
