@@ -3,10 +3,10 @@
 You can **replace the API key, API endpoint, model name, and input data path with your own local model or API to adapt it to your use case.
 
 ## 1. Project Structure
-(1) code_for_sentiment_analysis.py # Sentiment analysis
-(2) code_for_topic_identification.py # Topic identification
-(3) code_for_report_generation.py # Report generation & optimization
-(4) README.md
+- Code_for_sentiment_analysis # Sentiment analysis
+- Code_for_topic_identification # Topic identification
+- Code_for_report_generation # Report generation & optimization
+- README.md
 
 
 ## 2. Features
@@ -35,8 +35,8 @@ You can **replace the API key, API endpoint, model name, and input data path wit
   1. Encode the image and send it to the LLM for initial analysis to generate the first report.
   2. Use an optimization agent to refine structure, clarity, and style, producing the second report.
 - **Output**: Two Word documents (`.docx`):
-  - Initial analysis report
-  - Optimized report  
+  - Initial Analysis Report
+  - Optimized Analysis Report  
   Saved in the `reports/` folder.
 ---
 
