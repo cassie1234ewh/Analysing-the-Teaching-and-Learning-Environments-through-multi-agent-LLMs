@@ -1,0 +1,68 @@
+import requests
+import pandas as pd
+
+# LM Studio local API
+BASE_URL = "http://localhost:1234/v1/chat/completions"
+API_KEY = "lm-studio"
+
+
+def upload_and_read_excel(file_path):
+    return pd.read_excel(file_path)
+
+
+def evaluate_annotation(context):
+    try:
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "GPT4All-Community/Meta-Llama-3.1-8B-Instruct-128k-GGUF",
+            "messages": context
+        }
+        response = requests.post(BASE_URL, headers=headers, json=payload)
+        response.raise_for_status() 
+        result = response.json()
+        return result['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        raise Exception(f"Error during API call: {e}")
+
+
+def evaluate_row(row):
+    annotation = row['responses']
+
+    context = [
+        {"role": "system",
+         "content": "You are an advanced AI trained in topic identification."},
+        {"role": "user", "content": '''
+    Analyze the provided survey responses from students.
+    Your task is to **only** identify and extract the main topics from each response without adding any new topics or interpretations.
+    Instructions:
+    1. Identify the main topics **only** based on the provided response.
+    2. Each response may include one or more topics.
+    3. Output Format:
+        - Provide a list of identified topics for each response, separated by commas.
+        - Do not add, omit, or interpret the topics beyond those explicitly mentioned in the response.
+        - Only return the topics.
+    Here is the data you need to evaluate:
+    ''' + str(annotation)},
+    ]
+
+    sentiment = evaluate_annotation(context)
+    return sentiment
+
+
+def process_excel(file_path, output_path):
+    df = upload_and_read_excel(file_path)
+    df['Topic'] = df.apply(evaluate_row, axis=1)
+    df.to_excel(output_path, index=False)
+    print(f"Results saved to {output_path}")
+
+
+if __name__ == "__main__":
+    input_file = "Topic.xlsx" 
+    output_file = "topic1.xlsx" 
+    try:
+        process_excel(input_file, output_file)
+    except Exception as e:
+        print(f"Error: {e}")
